@@ -2,7 +2,7 @@
     'use strict';
 
     $boomStick.$register("$t",
-        $boomStick.$inject('$q', '$delimiters', '$baseURL', '$TemplateCache', '$dom' function (Q, delimiters, baseURL, $TemplateCache, $dom) {
+        $boomStick.$inject('$delimiters', '$baseURL', '$TemplateCache', '$dom', '$mustache' function (delimiters, baseURL, $TemplateCache, $dom, $mustache) {
             
             return function (share, templateName, options, $$ns) {
 
@@ -35,29 +35,25 @@
                         if (templateSelector.hasOwnProperty('url')) {
                             
                             // Download the template and store it.
-                            var defer = Q.defer();
-                            promise = defer.promise;
-                            $TemplateCache.$get(baseURL + templateSelector.url).then(function (data) {
-                                thisRef.template = data;
-                                defer.resolve(thisRef);
+                            promise = new Promise(function(resolve, reject){
+                                $TemplateCache.$get(baseURL + templateSelector.url).then(function (data) {
+                                    thisRef.template = data;
+                                    resolve(thisRef);
+                                });
                             });
 
                         } else if (templateSelector.hasOwnProperty('code')) {
                             
                             // Template is in object
                             this.template = templateSelector.code;
-                            promise = Q.fcall(function () {
-                                return thisRef;
-                            });
+                            promise = Promise.resolve(thisRef);
 
                         } else {
                             
                             // Template is in template script tag.
                             // Remove reference to hard-coded "document" object.
                             this.template = document.querySelector(cleanSelector(templateSelector)).innerHTML;
-                            promise = Q.fcall(function () {
-                                return thisRef;
-                            });
+                            promise = Promise.resolve(thisRef);
 
                         }
                         return promise;
@@ -167,27 +163,27 @@
                     },
 
                     // TODO: Rework / refactor, add expression evaluation -- maybe make this directive based
-                    decomposeMustache: function (rowScope) {
-                        var y = /\{\{([^\}]+)\}\}/g, formatter = /([^\}]*)\:([^\}]+)/g;
-                        return function (obj, idx) {
-                            var bindvar = obj.nodeValue,
-                                r = y.exec(bindvar), bindOut = bindvar;
-                            while (r !== null) {
-                                // Formatter => Property:FormatterFunction
-                                formatter.compile(formatter);
-                                var formatFn = formatter.exec(r[1]);
-                                if (formatFn !== null) {
-                                    if (this.$$Scope[formatFn[2]] !== undefined)
-                                        bindOut = bindOut.replace(r[0], this.$$Scope[formatFn[2]].call(this.$$Scope, rowScope[formatFn[1]], rowScope));
-                                } else {
-                                    if (rowScope[r[1]] !== undefined)
-                                        bindOut = bindOut.replace(r[0], rowScope[r[1]]); // sanitize not needed on text-nodes
-                                }
-                                r = y.exec(bindvar);
-                            }
-                            obj.nodeValue = bindOut; // safe, only changes contents of text nodes
-                        };
-                    },
+                    // decomposeMustache: function (rowScope) {
+                    //     var y = /\{\{([^\}]+)\}\}/g, formatter = /([^\}]*)\:([^\}]+)/g;
+                    //     return function (obj, idx) {
+                    //         var bindvar = obj.nodeValue,
+                    //             r = y.exec(bindvar), bindOut = bindvar;
+                    //         while (r !== null) {
+                    //             // Formatter => Property:FormatterFunction
+                    //             formatter.compile(formatter);
+                    //             var formatFn = formatter.exec(r[1]);
+                    //             if (formatFn !== null) {
+                    //                 if (this.$$Scope[formatFn[2]] !== undefined)
+                    //                     bindOut = bindOut.replace(r[0], this.$$Scope[formatFn[2]].call(this.$$Scope, rowScope[formatFn[1]], rowScope));
+                    //             } else {
+                    //                 if (rowScope[r[1]] !== undefined)
+                    //                     bindOut = bindOut.replace(r[0], rowScope[r[1]]); // sanitize not needed on text-nodes
+                    //             }
+                    //             r = y.exec(bindvar);
+                    //         }
+                    //         obj.nodeValue = bindOut; // safe, only changes contents of text nodes
+                    //     };
+                    // },
 
                     // TODO: refactor
                     apply: function (afterRenderFn) {
@@ -248,7 +244,7 @@
 
                                 // Find textnode-based bindings and decompose into observed values
                                 for (var x = 0; x < t.length; x++)
-                                    thisRef.iterateTextNodes(t[x], thisRef.decomposeMustache(result), thisRef);
+                                    thisRef.iterateTextNodes(t[x], $mustache(result), thisRef);
                                 
                                 // Replace in place or add to the target element.
                                 var target = thisRef.__targetSelector instanceof HTMLElement ? thisRef.__targetSelector : document.querySelector(thisRef.__targetSelector); // only allow this be attached to one element

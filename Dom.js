@@ -32,31 +32,43 @@
                     this.$$directives = [];
                     this.$$localScope = null;
                     this.$$template = null;
-                    this.__defaultDirectives();
+                    this.directives = {}; // implementation
+                    // this.__defaultDirectives();
                 },
                 register: function(scope, templateAppliance) {
                     this.$$template = templateAppliance;
                     this.$$localScope = scope;
                     return this;
                 },
-                __defaultDirectives: function () {
-                    var that = this, 
-                    eventTypes = [ // refactor into directive manager
-                        { name: 'if', type: 'immediate', namespace: 'std' },
-                        { name: 'repeater', type: 'repeater', namespace: 'std' },
-                        { name: 'observe', type: 'immediate', namespace: 'std' },
-                        { name: 'click', type: 'deferred', eventType: 'click', namespace: 'std' },
-                        { name: 'disabled', type: 'immediate', namespace: 'std' },
-                        { name: 'checked', type: 'immediate', namespace: 'std' },
-                        { name: 'id', type: 'immediate', namespace: 'std' },
-                        { name: 'value', type: 'immediate', namespace: 'std' },
-                        { name: 'view', type: 'immediate', namespace: 'std' },
-                        { name: 'directive', type: 'shared', namespace: 'std' },
-                        { name: 'model', type: 'immediate', namespace: 'std' },
-                        { name: 'href', type: 'immediate', namespace: 'std' },
-                        { name: 'change', type: 'deferred', eventType: 'change', namespace: 'std' }
-                    ];
-                    eventTypes.forEach(function (directive) { that.registerDirective(directive); });
+                // __defaultDirectives: function () {
+                //     var that = this, 
+                //     eventTypes = [ // refactor into directive manager
+                //         { name: 'if', type: 'immediate', namespace: 'std' },
+                //         { name: 'repeater', type: 'repeater', namespace: 'std' },
+                //         { name: 'observe', type: 'immediate', namespace: 'std' },
+                //         { name: 'click', type: 'deferred', eventType: 'click', namespace: 'std' },
+                //         { name: 'disabled', type: 'immediate', namespace: 'std' },
+                //         { name: 'checked', type: 'immediate', namespace: 'std' },
+                //         { name: 'id', type: 'immediate', namespace: 'std' },
+                //         { name: 'value', type: 'immediate', namespace: 'std' },
+                //         { name: 'view', type: 'immediate', namespace: 'std' },
+                //         { name: 'directive', type: 'shared', namespace: 'std' },
+                //         { name: 'model', type: 'immediate', namespace: 'std' },
+                //         { name: 'href', type: 'immediate', namespace: 'std' },
+                //         { name: 'change', type: 'deferred', eventType: 'change', namespace: 'std' }
+                //     ];
+                //     eventTypes.forEach(function (directive) { that.registerDirective(directive); });
+                // },
+                __addStandardDirective: function (directiveDefinition) {
+                    if (!this.$$directives.some(function (value) { return value.name === directiveDefinition.name; })){
+                        Object.defineProperty(this.directive, directiveDefinition.name, {
+                            writable: false,
+                            enumerable: true,
+                            value: directiveDefinition.implementation
+                        });
+                        this.registerDirective(directiveDefinition);
+                    }
+                    return this;
                 },
                 registerDirective: function (directiveDefinition, scope) {
                     if (!this.$$directives.some(function (value) { return value.name === directiveDefinition.name; }))
