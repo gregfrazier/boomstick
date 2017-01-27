@@ -17,4 +17,4 @@ FAQ
 1. Does this work? 
   * No, not yet. I'm refactoring an earlier attempt that does work, so it will eventually get there.
 2. How is this better than Angular, Aurelia, Mithril, Vue, React, etc?
-  * Short answer, it's not. Just an attempt to learn and keep brain active.
+  * Short answer, it's not. Just an attempt to learn and keep my brain active.
