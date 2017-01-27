@@ -7,10 +7,11 @@ Extendable and directive-based.
 
 Roadmap
 ---
-1. Completing the templating and dom building dependencies
-2. Fully implementing the directives (directives have been written, but I'm currently refactoring them)
-3. Creating working examples
-4. Configure for test-based development
+- [x] Completing the templating and dom building dependencies - good enough for now, but needs works.
+- [x] Fully implementing the standard directives
+- [x] Creating working examples, first *very* simple example is included, better examples are to come.
+- [] Configure for test-based development
+- [] Documentation
 
 FAQ
 ---
