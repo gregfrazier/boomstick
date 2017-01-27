@@ -62,7 +62,7 @@
             }
             return cloneObject;
         })
-        .$register("$Expressions", function () {
+        .$registerFactory("$Expressions", [function () {
             return {
                 evalBlock: function (str, scope) {
                     scope = scope || {};
@@ -125,15 +125,15 @@
                 equality: function (str, scope) {
                     var ltr = str.split('==');
                     if (ltr.length == 2) {
-                        var l = this.evalExpression(ltr[0].trim(), scope);
-                        var r = this.evalExpression(ltr[1].trim(), scope);
+                        var l = this.evalBlock(ltr[0].trim(), scope);
+                        var r = this.evalBlock(ltr[1].trim(), scope);
                         return l == r;
                     } else {
-                        return this.evalExpression(str, scope);
+                        return this.evalBlock(str, scope);
                     }
                 }
             };
-        })        
+        }])        
         .$register('$mustache', $boomStick.$inject('$Expressions', function ($exp) {
             return function (str, scope, formatterScope) {
                 var mustacheTrigger = /\{\{([^\}]+)\}\}/g, varFormatter = /([^\}]*)\:([^\}]+)/g,

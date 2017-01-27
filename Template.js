@@ -2,7 +2,7 @@
     'use strict';
 
     $boomStick.$register("$t",
-        $boomStick.$inject('$delimiters', '$baseURL', '$TemplateCache', '$dom', '$mustache' function (delimiters, baseURL, $TemplateCache, $dom, $mustache) {
+        $boomStick.$inject('$delimiters', '$baseURL', '$TemplateCache', '$dom', '$mustache', function (delimiters, baseURL, $TemplateCache, $dom, $mustache) {
             
             return function (share, templateName, options, $$ns) {
 
@@ -26,7 +26,7 @@
                     // Bind this appliance to the scope / controller
                     bind: function (scopedName, templateSelector, targetSelector) {
                         this.__targetSelector = targetSelector instanceof HTMLElement ? targetSelector : 
-                                                cleanSelector(targetSelector);
+                                                this.cleanSelector(targetSelector);
                         this.__internalScopedObj = scopedName;
                         
                         var promise = null,
@@ -52,7 +52,7 @@
                             
                             // Template is in template script tag.
                             // Remove reference to hard-coded "document" object.
-                            this.template = document.querySelector(cleanSelector(templateSelector)).innerHTML;
+                            this.template = document.querySelector(this.cleanSelector(templateSelector)).innerHTML;
                             promise = Promise.resolve(thisRef);
 
                         }
@@ -244,7 +244,9 @@
 
                                 // Find textnode-based bindings and decompose into observed values
                                 for (var x = 0; x < t.length; x++)
-                                    thisRef.iterateTextNodes(t[x], $mustache(result), thisRef);
+                                    thisRef.iterateTextNodes(t[x], function(obj, idx) { 
+                                        obj.nodeValue = $mustache(obj.nodeValue, result, thisRef.$$Scope);
+                                    }, thisRef);
                                 
                                 // Replace in place or add to the target element.
                                 var target = thisRef.__targetSelector instanceof HTMLElement ? thisRef.__targetSelector : document.querySelector(thisRef.__targetSelector); // only allow this be attached to one element
@@ -278,7 +280,7 @@
                                     var w = t.length, fragment = document.createDocumentFragment();
                                     while (w-- > 0) {
                                         var c = fragment.appendChild(t[0]);
-                                        $dom(null, c).register(rowScope, thisRef).decompose();
+                                        $dom(c).register(rowScope, thisRef).decompose();
                                     }
                                     
                                     // Attach the compiled element to the DOM along with a location comment element

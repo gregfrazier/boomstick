@@ -107,7 +107,8 @@ var $$NameScopeService = (function () {
             // TODO: Put this somewhere else, make configurable
             // ------------------------------------------------
             var thisRef = this, ns = this.$$namespace[appName];
-            ['delimiters', 'Q', 'window', 'baseURL', '$t'].forEach(function (str) {
+            ['$delimiters', '$fetch', '$window', '$document', '$baseURL', 
+             '$clone', '$Expressions', '$mustache', '$utils', '$dom', '$t' ].forEach(function (str) {
                 ns.$register(str, thisRef.$$injections[str]);
             });
             ns.$register('$$ns', ns);
