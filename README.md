@@ -12,10 +12,13 @@ Roadmap
 - [x] Creating working examples, first *very* simple example is included, better examples are to come.
 - [ ] Configure for test-based development
 - [ ] Documentation
+- [ ] Routing
+- [ ] Better infix expression evaluation, including equality (==, !=) and relational operators (<, >, etc.)
+- [ ] Mustache notation evaluation in non-textnodes (evaluation is available in controllers, but not fully built into template engine)
 
 FAQ
 ---
 1. Does this work? 
-  * No, not yet. I'm refactoring an earlier attempt that does work, so it will eventually get there.
+  * Minimally. There's a lot of code that you have to take care of yourself to get it up and running.
 2. How is this better than Angular, Aurelia, Mithril, Vue, React, etc?
   * Short answer, it's not. Just an attempt to learn and keep my brain active.
