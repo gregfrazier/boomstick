@@ -1,3 +1,4 @@
+// jshint esversion: 6
 // Part of the Boomstick.js Package
 // Main $boomStick object instantiation
 
@@ -22,7 +23,7 @@ var $$NameScopeService = (function () {
         this.$$parent = parent;
         this.$$id = id || 0;
         this.$$ns = '$';
-    }
+    };
 
     // Setup a watch on a model
     $$ScopeObject.prototype.$watch = function (exp, fn) {
@@ -33,10 +34,10 @@ var $$NameScopeService = (function () {
 
     // Bind a model to a scope / namespace, if the model is modified it will trigger an automatic digest to those who are watching the model
     $$ScopeObject.prototype.$bindModel = function (exp, modelName, modelScope) {
-        var nObj = { exp: exp, modelName: modelName, modelScope: modelScope };
+        let nObj = { exp: exp, modelName: modelName, modelScope: modelScope };
 
         // Check to see if the model already exists due to a digest, if so, use it instead.
-        var exists = this.$$models.filter(function (model) {
+        const exists = this.$$models.filter(function (model) {
             return model.modelName == nObj.modelName;
         });
         if (exists.length > 0) {
@@ -48,7 +49,9 @@ var $$NameScopeService = (function () {
             Object.defineProperty(nObj, '$$Model', {
                 get: function () {
                     if (this.exp instanceof HTMLInputElement) {
-                        return this.exp.getAttribute('type').toLowerCase() == 'checkbox' ? this.exp.checked : this.exp.value;
+                        return this.exp.getAttribute('type').toLowerCase() == 'checkbox' ? 
+                            this.exp.checked : 
+                            this.exp.value;
                     }
                     return this.exp.getAttribute('value');
                 },
@@ -76,7 +79,7 @@ var $$NameScopeService = (function () {
     // Create new watcher, append it to the namescope
     $$ScopeObject.prototype.$new = function (ns) {
         seqIdentifier++;
-        var obj = new $$ScopeObject(this, seqIdentifier);
+        let obj = new $$ScopeObject(this, seqIdentifier);
         obj.$$ns = ns || this.$$ns;
         this.$$children.push(obj);
         return obj;
@@ -84,7 +87,6 @@ var $$NameScopeService = (function () {
 
     // TODO: Needs serious work.
     $$ScopeObject.prototype.$digest = function (source) {
-        var scope = this;
         this.$$watchers.forEach(function (watcher, idx) {
             watcher.fn(source, watcher);
         });
@@ -106,7 +108,7 @@ var $$NameScopeService = (function () {
             // Add default injections
             // TODO: Put this somewhere else, make configurable
             // ------------------------------------------------
-            var thisRef = this, ns = this.$$namespace[appName];
+            const thisRef = this, ns = this.$$namespace[appName];
             ['$delimiters', '$fetch', '$window', '$document', '$baseURL', 
              '$clone', '$Expressions', '$mustache', '$utils', '$dom', '$t' ].forEach(function (str) {
                 ns.$register(str, thisRef.$$injections[str]);
@@ -114,9 +116,9 @@ var $$NameScopeService = (function () {
             ns.$register('$$ns', ns);
             // ------------------------------------------------
         }
-        var ns = this.$$namespace[appName];
+        const ns = this.$$namespace[appName];
         if (dependencies !== undefined && dependencies instanceof Array)
-            for (var x = 0; x < dependencies.length; x++) {
+            for (let x = 0; x < dependencies.length; x++) {
                 if (this.$$injections[dependencies[x]] !== undefined) {
                     ns.$register(dependencies[x], this.$$injections[dependencies[x]]);
                 } else if (this.$$factory[dependencies[x]] !== undefined) {
@@ -141,7 +143,6 @@ var $$NameScopeService = (function () {
     // @fnName - Event name
     // @result - Data to submit to each subscriber
     $$ScopeObject.prototype.$broadcast = function (fnName, result) {
-        var scope = this;
         this.$$subscriptions.filter(function (scrip) {
             return scrip.fn === fnName;
         }).forEach(function (scrip, idx) {
@@ -200,8 +201,8 @@ var $$NameScopeService = (function () {
     // 2. Final argument is the function to inject the objects into.
     // Example - MyNamespace.$inject('Q', function (Q) { return; } ); -- inject Q (from namespace) into the function.
     $$ScopeObject.prototype.$inject = function () {
-        var args = Array.prototype.slice.call(arguments).slice(0, arguments.length - 1);
-        var finalargs = [];
+        const args = Array.prototype.slice.call(arguments).slice(0, arguments.length - 1);
+        const finalargs = [];
         if (args === undefined)
             return arguments[0]();
         for (var a in args) {
@@ -221,4 +222,4 @@ var $$NameScopeService = (function () {
 })();
 
 // Main Object - used to configure / start an application
-var $boomStick = new $$NameScopeService();
+const $boomStick = new $$NameScopeService();

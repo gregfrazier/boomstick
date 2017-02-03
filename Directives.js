@@ -1,10 +1,9 @@
+// jshint esversion: 6
 (function () {
     'use strict';
     // Standard Built-In Directives.
     // This is not how to create new directives!
     // Executed immediately, dependencies must be loaded first
-    
-    //[scope, directive.type == 'shared' ? $clone(htmlElement.attributes, false) : null, qualifiersMap, thisRef, htmlElement]
     $boomStick.$register('$baselineDirectives',
         $boomStick.$inject('$delimiters', '$baseURL', '$Expressions', function (delimiters, baseURL, $exp) {
         	return [
@@ -14,7 +13,7 @@
                         // Evaluates the first qualifier (ignore all others), if false, hides the element
                         if (qualifiers[0].length > 0 && !$exp.equality(qualifiers[0], rootScope.$$localScope))
                             if (htmlElement.parentNode) {
-                                var c = document.createComment("if " + qualifiers[0])
+                                let c = document.createComment("if " + qualifiers[0]);
                                 htmlElement.parentNode.insertBefore(c, htmlElement);
                                 htmlElement.parentNode.removeChild(htmlElement);
                             }
@@ -32,9 +31,9 @@
                 	name: 'observe', type: 'immediate', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
                         rootScope.$$localScope.$$watcher.$watch(arguments, function (src, value, watch) {
-                            var qualifiers = value.exp[2];
+                            let qualifiers = value.exp[2];
                             if (qualifiers.length == 2) {
-                                var fn = $exp.equality(qualifiers[0], rootScope.$$localScope) || $exp.equality(qualifiers[0], rootScope.$$template.$$Scope);
+                                const fn = $exp.equality(qualifiers[0], rootScope.$$localScope) || $exp.equality(qualifiers[0], rootScope.$$template.$$Scope);
                                 if (fn instanceof Function) {
                                     fn($exp.encodeEntities($exp.equality(qualifiers[1], rootScope.$$localScope)), htmlElement, src, value, watch);
                                 }
@@ -47,11 +46,12 @@
                 	implementation: function (event, scope, elementAttributes, qualifiers, rootScope, htmlElement) {
                         
                         // Execute the function that is specified as the first qualifier
-                        var defer = scope[args.shift()].apply(
+                        const defer = scope[args.shift()].apply(
                         	scope, 
                         	args.map(function (o) { 
                         		return rootScope.$$localScope[o]; 
-                        	}).concat([scope, event, rootScope, htmlElement, qualifiers]));
+                        	}).concat([scope, event, rootScope, htmlElement, qualifiers])
+                        );
 
                         // If the function returns true, tell dom (which is rootScope) to reprocess
                         if (defer)
@@ -62,14 +62,14 @@
                 	name: 'disabled', type: 'immediate', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
                         if (qualifiers[0].length > 0 && $exp.equality(qualifiers[0], rootScope.$$localScope))
-                            htmlElement['disabled'] = true;
+                            htmlElement.disabled = true;
                     }
             	},
                 { 
                 	name: 'checked', type: 'immediate', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
                         if (qualifiers[0].length > 0 && $exp.equality(qualifiers[0], rootScope.$$localScope))
-                            htmlElement['checked'] = true;
+                            htmlElement.checked = true;
                     }
             	},
                 { 
@@ -90,27 +90,21 @@
                 { 
                 	name: 'view', type: 'immediate', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
-                        if (qualifiers.length == 1) {
-                            var evaluatedValue = $exp.encodeEntities($exp.equality(qualifiers[0], rootScope.$$localScope));
-                            htmlElement.innerHTML = evaluatedValue.length == 0 ? '&nbsp;' : evaluatedValue;
-                        } else if (qualifiers.length == 2) {
-                            var fn = $exp.equality(qualifiers[0], rootScope.$$localScope) || $exp.equality(qualifiers[0], rootScope.$$template.$$Scope);
-                            if (fn instanceof Function) {
-                                fn($exp.encodeEntities($exp.equality(qualifiers[1], rootScope.$$localScope)), htmlElement);
-                            }
-                        }
-
-                        rootScope.$$localScope.$$watcher.$watch(arguments, function (src, value, watch) {
+                        const viewFn = (src, value, watch) => {
                             if (qualifiers.length == 1) {
-                                var evaluatedValue = $exp.encodeEntities($exp.equality(qualifiers[0], rootScope.$$localScope));
-                                htmlElement.innerHTML = evaluatedValue.length == 0 ? '&nbsp;' : evaluatedValue;
+                                const evaluatedValue = $exp.encodeEntities($exp.equality(qualifiers[0], rootScope.$$localScope));
+                                htmlElement.innerHTML = evaluatedValue.length === 0 ? '&nbsp;' : evaluatedValue;
                             } else if (qualifiers.length == 2) {
-                                var fn = $exp.equality(qualifiers[0], rootScope.$$localScope) || $exp.equality(qualifiers[0], rootScope.$$template.$$Scope);
+                                const fn = $exp.equality(qualifiers[0], rootScope.$$localScope) || $exp.equality(qualifiers[0], rootScope.$$template.$$Scope);
                                 if (fn instanceof Function) {
                                     fn($exp.encodeEntities($exp.equality(qualifiers[1], rootScope.$$localScope)), htmlElement);
                                 }
                             }
-                        });
+                        };
+
+                        viewFn();
+
+                        rootScope.$$localScope.$$watcher.$watch(arguments, viewFn);
 
                     }
             	},
@@ -118,7 +112,7 @@
                 	name: 'directive', type: 'shared', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
                         // grabs the namespace watch service, which controls the application
-                        var ns = rootScope.$$template.$$NameSpace;
+                        const ns = rootScope.$$template.$$NameSpace;
                         if (qualifiers.length > 0) {
                             // One off function that instantiates a new controller from a special embedded factory
                             ns.$inject(qualifiers[0], function (directive) {
@@ -134,19 +128,17 @@
                 { 
                 	name: 'model', type: 'immediate', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
-                        var a = arguments;
+                        const changed = function (ev) {
+                            rootScope.$$localScope[qualifiers[0]] = htmlElement.checked;
+                            rootScope.$$localScope.$$watcher.$digest(ev.currentTarget);
+                        };
 
                         if (htmlElement instanceof HTMLInputElement && htmlElement.getAttribute('type').toLowerCase() == 'checkbox') {
-                            var changed = function (ev) {
-                                rootScope.$$localScope[qualifiers[0]] = htmlElement.checked;
-                                rootScope.$$localScope.$$watcher.$digest(ev.currentTarget);
-                            };
-
                             ['click'].forEach(function (o, i) {
                                 htmlElement.addEventListener(o, changed, true);
                             });
 
-                            var currentModelValue = $exp.equality(qualifiers[0], rootScope.$$localScope);
+                            let currentModelValue = $exp.equality(qualifiers[0], rootScope.$$localScope);
                             if (htmlElement instanceof HTMLInputElement) {
                                 if (currentModelValue === undefined) {
                                     currentModelValue = htmlElement.checked;
@@ -154,16 +146,11 @@
                                 }
                             }
                         } else {
-                            var changed = function (ev) {
-                                rootScope.$$localScope[qualifiers[0]] = htmlElement.value;
-                                rootScope.$$localScope.$$watcher.$digest(ev.currentTarget);
-                            };
-
                             ['change', /*'compositionend', 'compositionstart', 'blur',*/ 'input'].forEach(function (o, i) {
                                 htmlElement.addEventListener(o, changed, true);
                             });
 
-                            var currentModelValue = $exp.equality(qualifiers[0], rootScope.$$localScope);
+                            let currentModelValue = $exp.equality(qualifiers[0], rootScope.$$localScope);
                             if (htmlElement instanceof HTMLInputElement) {
                                 if (currentModelValue === undefined) {
                                     currentModelValue = htmlElement.value;
@@ -176,7 +163,7 @@
                                 }
                             }
                         }
-                        var model = rootScope.$$localScope.$$watcher.$bind(htmlElement, qualifiers[0], rootScope.$$localScope);
+                        const model = rootScope.$$localScope.$$watcher.$bind(htmlElement, qualifiers[0], rootScope.$$localScope);
                         model.$$Model = currentModelValue;
                         // send digest signal
                         rootScope.$$localScope.$$watcher.$digest(htmlElement);
@@ -186,7 +173,7 @@
                 	name: 'href', type: 'immediate', namespace: 'std',
                 	implementation: function (scope, elementAttributes, qualifiers, rootScope, htmlElement) {
                         if (qualifiers.length > 0) {
-                            var value = qualifiers[0].replace(/^\~\//, baseURL);
+                            let value = qualifiers[0].replace(/^\~\//, baseURL);
                             value = $mustache(value, rootScope.$$localScope, rootScope);
                             htmlElement.setAttribute('href', value);
                         }

@@ -1,3 +1,4 @@
+// jshint esversion: 6
 (function () {
     'use strict';
 
@@ -5,8 +6,8 @@
         $boomStick.$inject('$delimiters', '$clone', '$utils', '$baselineDirectives', function ($delimiters, $clone, $utils, $baselineDirectives) {
 
             var __dom = function(selector, element) {
-                var rootElement = element || document;
-                var select = function(s, element){ return element['querySelectorAll'](s); };
+                const select = function(s, element){ return element['querySelectorAll'](s); };
+                let rootElement = element || document;                
                 if(selector === undefined || selector === null)
                     return null;
                 if(selector instanceof HTMLElement || selector instanceof Text)
@@ -16,10 +17,10 @@
             };
             __dom.self = function(){ return this; };
             __dom.extend = function(element) {
-                var prototype = new this.self();
+                let prototype = new this.self();
                 function __domInstance() {
                     this.init.apply(this, arguments);
-                };
+                }
                 __domInstance.prototype = prototype;
                 __domInstance.prototype.constructor = __domInstance;
                 __domInstance.extend = __dom.extend;
@@ -41,13 +42,12 @@
                     return this;
                 },
                  __defaultDirectives: function () {
-                    var thisRef = this;
-                    $baselineDirectives.forEach(function(directive){
-                        thisRef.__addStandardDirective(directive);
-                    })
+                    $baselineDirectives.forEach((directive) => {
+                        this.__addStandardDirective(directive);
+                    });
                 },
                 __addStandardDirective: function (directiveDefinition) {
-                    if (!this.$$directives.some(function (value) { return value.name === directiveDefinition.name; })){
+                    if (!this.$$directives.some((value) => { return value.name === directiveDefinition.name; })){
                         Object.defineProperty(this.directives, directiveDefinition.name, {
                             writable: false,
                             enumerable: true,
@@ -76,25 +76,24 @@
                 },
                 decompose: function () {
                     // search each node in targetElement for a match to the attribute
-                    var thisRef = this, 
-                        repeaterNodes = [], 
-                        attrList = this.attributeList;
+                    const thisRef = this, 
+                          repeaterNodes = [];
 
                     $utils.forEachElement(this.$$target, this.$$template.$$Scope, function (htmlElement) {
-                        var __templateScope = this, // this.$$template.$$Scope
-                            repeaterElement = false, 
+                        const __templateScope = this;
+                        let repeaterElement = false, 
                             repeaterScope = {};
 
 
                         if(htmlElement.attributes !== undefined && htmlElement.attributes !== null) {
-                            var activeDirectives = thisRef.identifyDirectives(htmlElement.attributes);
+                            const activeDirectives = thisRef.identifyDirectives(htmlElement.attributes);
                             activeDirectives.forEach(function (directive, idx){
                                 if(directive.attributeObject !== undefined || directive.attributeObject !== null ) {
-                                    var qualifiers = directive.attributeObject.value.split(':'),
-                                        qualifiersMap = qualifiers.map(function (modifier) { return modifier; }),
-                                        dirFunctionName = $utils.snakeToCamel(directive.directive.name),
-                                        dirNamespace = directive.directive.namespace == 'std' ? thisRef.directives : __templateScope.directives,
-                                        dirParamArray = [];
+                                    const qualifiers = directive.attributeObject.value.split(':'),
+                                          qualifiersMap = qualifiers.map((modifier) => { return modifier; }),
+                                          dirFunctionName = $utils.snakeToCamel(directive.directive.name),
+                                          dirNamespace = directive.directive.namespace == 'std' ? thisRef.directives : __templateScope.directives;
+                                    let dirParamArray = [];
 
                                     // Directives have four types: (currently)
                                     // shared    - split off to another controller with a shared scope
@@ -119,13 +118,13 @@
                                         repeaterElement = true;
                                         
                                         // List of objects that will be decomposed
-                                        repeaterItemList = thisRef.localScope[parts[0]];
+                                        const repeaterItemList = thisRef.localScope[parts[0]];
                                         
                                         // Allow shared access to the parent scope
-                                        var parentScope = thisRef.localScope;
+                                        const parentScope = thisRef.localScope;
 
                                         // Need to clone the elements below this element n-times
-                                        var repeaterContainer = htmlElement,
+                                        let repeaterContainer = htmlElement,
                                             repeaterTemplate = htmlElement.cloneNode(true).children;
                                         
                                         // Remove the container's default template
@@ -134,14 +133,14 @@
 
                                         repeaterItemList.forEach(function (listItem, idx) {
                                             
-                                            var fragment = document.createDocumentFragment();
+                                            let fragment = document.createDocumentFragment();
 
                                             // Keep track of items by using a repeater comment element
-                                            var c = document.createComment("repeat " + parts[0]);
+                                            let c = document.createComment("repeat " + parts[0]);
                                             
-                                            for (var childElement in repeaterTemplate)
+                                            for (let childElement in repeaterTemplate)
                                                 if (repeaterTemplate.hasOwnProperty(childElement)) {
-                                                    var repeatedElement = repeaterTemplate[childElement].cloneNode(true);
+                                                    let repeatedElement = repeaterTemplate[childElement].cloneNode(true);
                                                     
                                                     // Bind to the shared template appliance
                                                     thisRef.$$template.iterateTextNodes(

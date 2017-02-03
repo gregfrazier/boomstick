@@ -1,17 +1,18 @@
+// jshint esversion: 6
 (function () {
     'use strict';
 
     $boomStick.$register("$TemplateCache",
         $boomStick.$inject('$delimiters', '$baseURL', '$fetch', function (delimiters, baseURL, $fetch) {
-            var $TemplateCache = function () {
+            let $TemplateCache = function () {
                 this.$$templates = [];
             };
             $TemplateCache.prototype.$get = function (templateURL) {
                 return new Promise(function (resolve, reject){                
-                    var template = this.$find(templateURL), 
-                        templCache = this;
+                    const template = this.$find(templateURL), 
+                          templCache = this;
 
-                    if (template == null) {
+                    if (template === null) {
                         $fetch(templateURL, {
                             method: 'GET',
                             credentials: "same-origin"
