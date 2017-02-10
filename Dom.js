@@ -3,7 +3,7 @@
     'use strict';
 
     $boomStick.$register("$dom",
-        $boomStick.$inject('$delimiters', '$clone', '$utils', '$baselineDirectives', function ($delimiters, $clone, $utils, $baselineDirectives) {
+        $boomStick.$inject('$delimiters', '$clone', '$utils', '$baselineDirectives', '$mustache', function ($delimiters, $clone, $utils, $baselineDirectives, $mustache) {
 
             var __dom = function(selector, element) {
                 const select = function(s, element){ return element['querySelectorAll'](s); };
@@ -113,19 +113,19 @@
                                     }
 
                                     // Repeater Type - value of the repeater must match to an array within the "Local Row Scope"
-                                    if(directive.directive.type == 'repeater' && thisRef.$$localScope.hasOwnProperty(parts[0])) {
+                                    if(directive.directive.type == 'repeater' && thisRef.$$localScope.hasOwnProperty(qualifiers[0])) {
                                         
                                         repeaterElement = true;
                                         
                                         // List of objects that will be decomposed
-                                        const repeaterItemList = thisRef.localScope[parts[0]];
+                                        const repeaterItemList = thisRef.$$localScope[qualifiers[0]];
                                         
                                         // Allow shared access to the parent scope
-                                        const parentScope = thisRef.localScope;
+                                        const parentScope = thisRef.$$localScope;
 
                                         // Need to clone the elements below this element n-times
                                         let repeaterContainer = htmlElement,
-                                            repeaterTemplate = htmlElement.cloneNode(true).children;
+                                            repeaterTemplate = htmlElement.innerHTML; //cloneNode(true).children;
                                         
                                         // Remove the container's default template
                                         while (repeaterContainer.firstChild)
@@ -136,31 +136,43 @@
                                             let fragment = document.createDocumentFragment();
 
                                             // Keep track of items by using a repeater comment element
-                                            let c = document.createComment("repeat " + parts[0]);
+                                            let c = document.createComment("repeat " + qualifiers[0]);
+
+                                            fragment.appendChild(c);
                                             
-                                            for (let childElement in repeaterTemplate)
-                                                if (repeaterTemplate.hasOwnProperty(childElement)) {
-                                                    let repeatedElement = repeaterTemplate[childElement].cloneNode(true);
+                                            //for (let childElement in repeaterTemplate)
+                                            //    if (repeaterTemplate.hasOwnProperty(childElement)) {                                                    
+                                            //        let repeatedElement = repeaterTemplate[childElement].cloneNode(true);
                                                     
+                                                    // TODO: change this to use the TemplateAppliance instead of doing a "micro" version of it here.
+
                                                     // Bind to the shared template appliance
-                                                    thisRef.$$template.iterateTextNodes(
-                                                        repeatedElement, 
-                                                        thisRef.$$template.decomposeMustache(listItem), 
-                                                        thisRef
-                                                    );
+                                                    //thisRef.$$template.iterateTextNodes(
+                                                    //    repeatedElement, 
+                                                    //    $mustache(listItem, )
+                                                    //    //thisRef.$$template.decomposeMustache(listItem), 
+                                                    //    thisRef
+                                                    //);
+
+                                                    listItem.$$dirty = true;
+                                                    listItem.$$deleted = false;
+
+                                                    var frag = thisRef.$$template.compileSingleScope(listItem, repeaterTemplate, fragment, c, qualifiers[0], idx);
                                                     
-                                                    fragment.appendChild(repeatedElement);
+                                                    fragment.appendChild(frag.compiledFragment);
                                                     
-                                                    listItem.$$watcher = thisRef.$$template.$$NameSpace.$new();
-                                                    listItem.$$parentScope = parentScope;
+                                                    if(listItem.$$watcher === undefined || listItem.$$watcher === null)
+                                                        listItem.$$watcher = thisRef.$$template.$$NameSpace.$new();
+                                                    if(listItem.$$parentScope === undefined || listItem.$$parentScope === null)
+                                                        listItem.$$parentScope = parentScope;
                                                     
                                                     repeaterNodes.push({
-                                                        childElement: repeatedElement, 
+                                                        childElement: frag.compiledFragment, 
                                                         childScope: listItem 
                                                     });
-                                                }
+                                                //}
                                             
-                                            fragment.appendChild(c);
+                                            //fragment.appendChild(c);
                                             
                                             // Append fragment to the container to be visible
                                             repeaterContainer.appendChild(fragment);
@@ -182,13 +194,13 @@
                                             .register(thisRef.$$localScope, thisRef.$$template)
                                             .decompose();
                                     });
-                            } else {
-                                repeaterNodes.forEach(function (node) {
-                                    __dom(node.childElement)
-                                        .register(node.childScope, thisRef.$$template)
-                                        .decompose();
-                                });                                
-                            }
+                            } //else {
+                            //     repeaterNodes.forEach(function (node) {
+                            //         __dom(node.childElement)
+                            //             .register(node.childScope, thisRef.$$template)
+                            //             .decompose();
+                            //     });                                
+                            // }
                     });
                 }
             };

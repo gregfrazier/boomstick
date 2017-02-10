@@ -8,7 +8,7 @@
     Demo.$register("NameAgeController",
     	Demo.$inject( '$t', '$$ns', function($t, $$ns){
     		var nameAge = {
-    			values: [{ Name: 'Wilbur', Age: '46' },{ Name: "Ted", Age: "98" }],
+    			values: [{ Name: 'Wilbur', Age: '46', Test:[{Value: '1'}, {Value: '2'}, {Value: '3'}] },{ Name: "Ted", Age: "98", Test:[{Value: '4'}, {Value: '5'}, {Value: '6'}] }],
     			compileTemplate: function(settings) {
     				for(var setting in settings)
     					if(settings.hasOwnProperty(setting)) {

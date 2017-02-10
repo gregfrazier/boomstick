@@ -14,7 +14,7 @@
                     
                     __targetSelector: null,
                     __templateIdentity: null,
-                    __internalScopedObj: null,
+                    __internalScopedObjName: null,
 
                     locators: {},
                     targetElements: null,
@@ -28,7 +28,7 @@
                     bind: function (scopedName, templateSelector, targetSelector) {
                         this.__targetSelector = targetSelector instanceof HTMLElement ? targetSelector : 
                                                 this.cleanSelector(targetSelector);
-                        this.__internalScopedObj = scopedName;
+                        this.__internalScopedObjName = scopedName;
                         
                         let promise = null;
                         const thisRef = this;                        
@@ -60,6 +60,11 @@
                         return promise;
                     },
 
+                    // Not to be called outside of the standard libraries
+                    __internalBind: function(scope) {
+
+                    },
+
                     // This only processes on a text-node, very limited
                     iterateTextNodes: function (element, action, scope) {
                         if (element === undefined || element === null || element.childNodes === null || element.childNodes.length === 0)
@@ -73,131 +78,153 @@
 
                     // Add internal values to the scope object list. Automatically "dirty" the objects so they are rendered (dirty triggers a digest cycle.)
                     index: function (dirty) {
-                        const indexedData = this.$$Scope[this.__internalScopedObj].map(function (obj, idx) {
+                        const indexedData = this.$$Scope[this.__internalScopedObjName].map(function (obj, idx) {
                             obj.$$index = idx;
                             obj.$$dirty = dirty || true;
                             obj.$$deleted = false;
                             return obj;
                         });
-                        this.$$Scope[this.__internalScopedObj].splice(0);
-                        Array.prototype.push.apply(this.$$Scope[this.__internalScopedObj], indexedData);
+                        this.$$Scope[this.__internalScopedObjName].splice(0);
+                        Array.prototype.push.apply(this.$$Scope[this.__internalScopedObjName], indexedData);
                         return this;
+                    },
+
+                    // compile the template as a single model
+                    // must be called where this = the templateappliance
+                    compileSingleScope: function(modelScope, template, targetSelector, locComment, scopedObjectName, idx) {
+                        var thisRef = this;
+                        var preLinkFn = function() {};
+
+                        let cmt = undefined;
+                        let fragment = null;
+                        // Only modify this object if it's dirty, otherwise the state hasn't changed so it does not need processed.
+                        if (modelScope.$$dirty) {
+                            // Get the template and wrap it for browser compatibility.
+                            const s = template,
+                                  rowScope = modelScope; // data for the current object being processed
+                            
+                            let t = $utils.wrapMap(s.trim()); // this is the adjusted template HTML represented as elements
+
+                            // Each object has it's own watcher
+                            if (rowScope.$$watcher === undefined)
+                                rowScope.$$watcher = this.$$NameSpace.$new();
+
+                            // Everything is treated as an array, single elements aren't collections so it's faked.
+                            if (!(t instanceof HTMLCollection))
+                                t = [t];
+
+                            // Pre-link Function, modification of the template can happen prior to evaluating the template's scope variables
+                            if (preLinkFn instanceof Function)
+                                preLinkFn(t); // arguments are the template elements
+
+                            // Find textnode-based bindings and decompose into observed values
+                            const nodeFn = (obj, idx) => { 
+                                obj.nodeValue = $mustache(obj.nodeValue, modelScope, thisRef.$$Scope);
+                            };
+                            for (let x = 0; x < t.length; x++)
+                                this.iterateTextNodes(t[x], nodeFn, thisRef);
+                            
+                            // Replace in place or add to the target element.
+                            let target = targetSelector;
+                            if(!(targetSelector instanceof HTMLElement || targetSelector instanceof DocumentFragment))
+                                target = document.querySelector(targetSelector);
+                            
+                            // If the location comment element exists, reuse it, otherwise create a new one
+                            if (locComment !== undefined) {
+                                if (!rowScope.$$deleted) { // doesn't appear that this should ever be false, need to refactor
+                                    
+                                    // TODO: Refactor, this is identical code to below in the else statement.
+                                    // Process the template with dom library
+                                    let w = t.length;
+                                    fragment = document.createDocumentFragment();
+                                    while (w-- > 0) {
+                                        let c = fragment.appendChild(t[0]);
+                                        $dom(c).register(rowScope, thisRef).decompose();
+                                    }
+                                    if (locComment.parentElement)
+                                        locComment.parentElement.insertBefore(fragment, locComment);
+                                    else 
+                                        locComment.parentNode.insertBefore(fragment, locComment);
+
+                                } else {
+                                    
+                                    // remove locater
+                                    locComment.parentNode.removeChild(locComment);
+                                    cmt = undefined;
+                                    //locs[idx] = undefined;
+
+                                }
+                            } else {
+                                
+                                // TODO: Refactor, this is identical code to above in the if statement.
+                                let w = t.length;
+                                fragment = document.createDocumentFragment();
+                                while (w-- > 0) {
+                                    let c = fragment.appendChild(t[0]);
+                                    $dom(c).register(rowScope, thisRef).decompose();
+                                }
+                                
+                                // Attach the compiled element to the DOM along with a location comment element
+                                const repeaterId = scopedObjectName + " repeater"
+                                cmt = document.createComment(repeaterId);
+                                fragment.appendChild(cmt);
+                                target.appendChild(fragment);
+
+                                // Set the locater so we can see what needs to be replaced on the next cycle
+                                //locs[idx] = cmt;
+                            }
+                            modelScope.$$dirty = false;
+                        }
+                        return { compiledFragment: fragment, modelScope: modelScope, locationComment: cmt };
                     },
 
                     // TODO: refactor
                     apply: function (preLinkFn, postLinkFn) {
 
-                        const data = this.$$Scope[this.__internalScopedObj], 
+                        const data = this.$$Scope[this.__internalScopedObjName], 
                               thisRef = this;
-                        let locs = this.locators[this.__internalScopedObj];
+                        let locs = this.locators[this.__internalScopedObjName];
 
                         if (locs === undefined)
-                            locs = this.locators[this.__internalScopedObj] = [];
+                            locs = this.locators[this.__internalScopedObjName] = [];
 
                         const indexedData = data.filter(function (result) {
                             
                             // Remove deleted objects from the render cycle
                             return !result.$$deleted;
                         
-                        }).map(function (result, idx) {
+                        }).map(function (result, idx) { /* result = current model scope */
                             
                             // This should be removed, it's not a good idea.
                             if (result.$$index !== idx) {
                                 result.$$index = idx;
                                 result.$$dirty = true;
                             }
-                            
-                            // Only modify this object if it's dirty, otherwise the state hasn't changed so it does not need processed.
-                            if (result.$$dirty) {
-                                // Get the template and wrap it for browser compatibility.
-                                const s = thisRef.template,                                    
-                                      rowScope = result; // data for the current object being processed
-                                
-                                let t = $utils.wrapMap(s.trim()); // this is the adjusted template HTML represented as elements
 
-                                // Because templates are processed on a set (array of objects), they need to be kept track of by using a specially named comment to differentiate between them.
-                                const loc = locs[idx], repeaterId = thisRef.__internalScopedObj + " repeater"; // refactor this into a function that creates a repeater comment value
-                                if (loc !== undefined) {
-                                    // Build list of elements to remove, and then remove them from the DOM (they will be rebuilt)
-                                    const removeList = [];
-                                    let curr = loc.previousSibling;
-                                    while (curr !== null) {
-                                        if (curr.nodeType === Node.COMMENT_NODE && curr.nodeValue === repeaterId) {
-                                            curr = null;
-                                        } else {
-                                            removeList.push(curr);
-                                            curr = curr.previousSibling;
-                                        }
-                                    }
-                                    removeList.forEach(function (el) {
-                                        if (el.parentNode)
-                                            el.parentNode.removeChild(el);
-                                    });
-                                }
-
-                                // Each object has it's own watcher
-                                if (rowScope.$$watcher === undefined)
-                                    rowScope.$$watcher = thisRef.$$NameSpace.$new();
-
-                                // Everything is treated as an array, single elements aren't collections so it's faked.
-                                if (!(t instanceof HTMLCollection))
-                                    t = [t];
-
-                                // Pre-link Function, modification of the template can happen prior to evaluating the template's scope variables
-                                preLinkFn(t); // arguments are the template elements
-
-                                // Find textnode-based bindings and decompose into observed values
-                                const nodeFn = (obj, idx) => { 
-                                    obj.nodeValue = $mustache(obj.nodeValue, result, thisRef.$$Scope);
-                                };
-                                for (let x = 0; x < t.length; x++)
-                                    thisRef.iterateTextNodes(t[x], nodeFn, thisRef);
-                                
-                                // Replace in place or add to the target element.
-                                const target = thisRef.__targetSelector instanceof HTMLElement ? thisRef.__targetSelector : document.querySelector(thisRef.__targetSelector); // only allow this be attached to one element
-                                
-                                // If the location comment element exists, reuse it, otherwise create a new one
-                                if (loc !== undefined) {
-                                    if (!rowScope.$$deleted) { // doesn't appear that this should ever be false, need to refactor
-                                        
-                                        // TODO: Refactor, this is identical code to below in the else statement.
-                                        // Process the template with dom library
-                                        let w = t.length, fragment = document.createDocumentFragment();
-                                        while (w-- > 0) {
-                                            let c = fragment.appendChild(t[0]);
-                                            $dom(null, c).register(rowScope, thisRef).decompose();
-                                        }
-                                        if (loc.parentElement)
-                                            loc.parentElement.insertBefore(fragment, loc);
-                                        else 
-                                            loc.parentNode.insertBefore(fragment, loc);
-
+                            // Because templates are processed on a set (array of objects), they need to be kept track of by using a specially named comment to differentiate between them.
+                            const loc = locs[idx], repeaterId = thisRef.__internalScopedObjName + " repeater"; // refactor this into a function that creates a repeater comment value
+                            if (loc !== undefined) {
+                                // Build list of elements to remove, and then remove them from the DOM (they will be rebuilt)
+                                const removeList = [];
+                                let curr = loc.previousSibling;
+                                while (curr !== null) {
+                                    if (curr.nodeType === Node.COMMENT_NODE && curr.nodeValue === repeaterId) {
+                                        curr = null;
                                     } else {
-                                        
-                                        // remove locater
-                                        loc.parentNode.removeChild(loc);
-                                        locs[idx] = undefined;
-
+                                        removeList.push(curr);
+                                        curr = curr.previousSibling;
                                     }
-                                } else {
-                                    
-                                    // TODO: Refactor, this is identical code to above in the if statement.
-                                    let w = t.length, fragment = document.createDocumentFragment();
-                                    while (w-- > 0) {
-                                        let c = fragment.appendChild(t[0]);
-                                        $dom(c).register(rowScope, thisRef).decompose();
-                                    }
-                                    
-                                    // Attach the compiled element to the DOM along with a location comment element
-                                    let cmt = document.createComment(repeaterId);
-                                    fragment.appendChild(cmt);
-                                    target.appendChild(fragment);
-
-                                    // Set the locater so we can see what needs to be replaced on the next cycle
-                                    locs[idx] = cmt;
                                 }
-                                result.$$dirty = false;
-                            }
+                                removeList.forEach(function (el) {
+                                    if (el.parentNode)
+                                        el.parentNode.removeChild(el);
+                                });
+                            }                            
+
+                            var fragment = thisRef.compileSingleScope.call(thisRef, result, thisRef.template, thisRef.__targetSelector, loc, thisRef.__internalScopedObjName, idx);
+
+                            locs[idx] = fragment.locationComment;
+                            
                             return result;
                         });
 
@@ -207,7 +234,7 @@
                             const stagnant = locs.splice(indexedData.length);
                             stagnant.forEach(function (loc, idx) {
                                 // This is identical code to above, need to refactor.
-                                const repeaterId = thisRef.__internalScopedObj + " repeater"; // refactor this into a function that creates a repeater comment value
+                                const repeaterId = thisRef.__internalScopedObjName + " repeater"; // refactor this into a function that creates a repeater comment value
                                 if (loc !== undefined) {
                                     const removeList = [];
                                     let curr = loc.previousSibling;
@@ -230,10 +257,10 @@
                         }
 
                         // Remove all objects in place (avoids dereferencing the array object)
-                        this.$$Scope[this.__internalScopedObj].splice(0);
+                        this.$$Scope[this.__internalScopedObjName].splice(0);
 
                         // Push the newly processed objects back into the array, with the deleted objects removed.
-                        Array.prototype.push.apply(this.$$Scope[this.__internalScopedObj], indexedData);
+                        Array.prototype.push.apply(this.$$Scope[this.__internalScopedObjName], indexedData);
 
                         // If an "Post Link" function is supplied, execute it now.
                         if (postLinkFn instanceof Function)
