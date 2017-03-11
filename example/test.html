@@ -4,17 +4,45 @@
 	<meta charset="utf-8">
 </head>
 <body>
-<div class="container">
-</div>
+<table border=1>
+	<thead>
+		<tr>
+			<td>Name</td>
+			<td>Age</td>
+			<td>Some Other Info</td>
+		</tr>
+	</thead>
+	<tbody class="container">
+	</tbody>
+</table>
+
+<br/>
+
+Secondary controller:
+<table border=1>
+	<thead>
+		<tr>
+			<td>Name</td>
+			<td>Age</td>
+			<td>Some Other Info</td>
+		</tr>
+	</thead>
+	<tbody id="container2">
+	</tbody>
+</table>
 </body>
 <script id="tmpl_name_age" type="text/template">
-<div>
-Name: {{Name}}<br/>
-Age: {{Age}} <span bs-if="Age == 98"> -- Getting up there eh?</span>
-<div bs-repeater="Test">
-<span>{{Value}}</span>
-</div>
-</div>
+<tr>
+<td>
+	{{Name}}
+</td>
+<td>
+	{{Age}} <span bs-if="Age == 98"> -- Getting up there eh?</span>
+</td>
+<td bs-repeater="Test">
+	<span>{{Value}},</span>
+</td>
+</tr>
 </script>
 <!-- Boomstick Minimum Files -->
 <script src="../Namescope.js"></script>
@@ -24,6 +52,7 @@ Age: {{Age}} <span bs-if="Age == 98"> -- Getting up there eh?</span>
 <script src="../Dom.js"></script>
 <script src="../TemplateCache.js"></script>
 <script src="../Template.js"></script>
+<script src="../Component.js"></script>
 
 <!-- Application Files -->
 <script src="app.js"></script>

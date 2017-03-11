@@ -110,7 +110,7 @@ var $$NameScopeService = (function () {
             // ------------------------------------------------
             const thisRef = this, ns = this.$$namespace[appName];
             ['$delimiters', '$fetch', '$window', '$document', '$baseURL', 
-             '$clone', '$Expressions', '$mustache', '$utils', '$dom', '$t' ].forEach(function (str) {
+             '$clone', '$Expressions', '$mustache', '$utils', '$dom', '$t'].forEach(function (str) {
                 ns.$register(str, thisRef.$$injections[str]);
             });
             ns.$register('$$ns', ns);
@@ -122,9 +122,9 @@ var $$NameScopeService = (function () {
                 if (this.$$injections[dependencies[x]] !== undefined) {
                     ns.$register(dependencies[x], this.$$injections[dependencies[x]]);
                 } else if (this.$$factory[dependencies[x]] !== undefined) {
-                    ns.$register(dependencies[x], this.$inject.apply(ns, this.$$factory[dependencies[x]]));
+                    ns.$registerFactory(dependencies[x], this.$$factory[dependencies[x]]);
                 } else if (this.$$service[dependencies[x]] !== undefined) {
-                    ns.$register(dependencies[x], this.$$service[dependencies[x]](ns));
+                    ns.$registerService(dependencies[x], this.$$service[dependencies[x]](ns));
                 } else {
                     ns.$register(dependencies[x], undefined);
                 }
@@ -209,7 +209,8 @@ var $$NameScopeService = (function () {
             if (this.$$injections.hasOwnProperty(args[a])) {
                 finalargs.push(this.$$injections[args[a]]);
             } else if (this.$$factory.hasOwnProperty(args[a])) {
-                finalargs.push(this.$inject.apply(this, this.$$factory[args[a]]));
+                //finalargs.push(this.$inject.apply(this, this.$$factory[args[a]]));
+                finalargs.push(new (this.$inject.apply(this, this.$$factory[args[a]]))());
             } else if (this.$$service.hasOwnProperty(args[a])) {
                 finalargs.push(this.$$service[args[a]](this));
             } else {
